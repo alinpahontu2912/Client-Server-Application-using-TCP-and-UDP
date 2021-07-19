@@ -1,0 +1,58 @@
+Pahontu Stefan Alin 321CA
+
+Flow of the program:
+
+Client:
+	- when a new client starts, it will send its ID to the server, which will check 
+whether the ID is a new one, or the ID of an existing client(in which case it will 
+close the new connection)
+	- the client can receive the following commands from standard input:
+		- "exit" -> in which case it will close down
+		- "subscribe <topic> <sf>" -> if the message is inputed correctly, then
+the client will send this message to the server, informing him of the new subscription
+		- "unsubscribe <topic>" -> if the message is inputed corecctly, the client 
+will inform the server of the chenage in subscriptions, by sending him a message
+
+Server:
+	- it can receive messages from :
+		- standard input: the only accepted command is exit, which will close the 
+server and all its active connetions
+		
+		- TCP socket: it receives a new connection request from a client:
+			- it will receive the ID of the new client
+			- if the ID does not exist in the data base, it will configure the
+new client
+			- if the ID is the same as an ID of a client already connected, it will
+close the new connection 
+			- if the ID is the ID of an old client, then the server will send that 
+client the messages sent while he's been disconnected
+
+		- UDP socket: it receives a new message from a UDP client
+			- since the content of the UDP message is known, the seerver will extract
+and form the new message that has to be send to the clients subscribed to the topic of
+the UDP message
+			- if a client is disconnected , yet subscribet to a topic with sf = 1, the
+message will be memorized to be sent after he's reconnected
+			
+		- other TCP sockets : it receives subscribe/unsubscribe requests from already
+connected clients
+			- it can also tell whether a client has disconnected
+
+
+	How messages are transmitted between the server and its TCP clients:
+		- after the server is done formatting the new message, it will first send its 
+size to the clients subscribed to the topic of the message (It is needed because TCP 
+protocol will merge smaller messages to reduce traffic, even if Nagle's algorithm is 
+disabled)
+		- after the size, the new message is transmitted to all clients subscribed to 
+the topic
+		- the client will first receive the size and then extract that number of bytes
+from the message received afterwards
+		- the message will contain the following pieces of information: UDP sender IP,
+UDP sender port, Topic, Data type and the formatted content based on the Data Type 
+
+Wrong input from stdin:
+	- In case the input from stdin does not match any accepted command, nothing happens
+	- If the written command partially matches a correct one (e.g "subscribe topic",
+instead of "subscribe topic 1"), an error message will apear describing the problem,
+while also idsconnecting that client.
